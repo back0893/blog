@@ -10,7 +10,13 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"go.yaml.in/yaml/v2"
 )
+
+type SiteConfig struct {
+	BaseURL string `yaml:"baseURL"`
+}
 
 type PostSummary struct {
 	Title string   `json:"title"`
@@ -20,6 +26,7 @@ type PostSummary struct {
 }
 
 type PostData struct {
+	Site  *SiteConfig
 	Title string
 	Date  string
 	Tags  []string
@@ -29,6 +36,7 @@ type PostData struct {
 }
 
 type IndexData struct {
+	Site      *SiteConfig
 	PostsJSON template.JS
 }
 
@@ -38,7 +46,26 @@ type postInfo struct {
 	tags    []string
 }
 
+func loadConfig() *SiteConfig {
+	data, err := os.ReadFile("config.yaml")
+	if err != nil {
+		log.Printf("config.yaml not found, using defaults")
+		return &SiteConfig{BaseURL: "/"}
+	}
+	cfg := &SiteConfig{}
+	if err := yaml.Unmarshal(data, cfg); err != nil {
+		log.Printf("parse config.yaml error: %v, using defaults", err)
+		return &SiteConfig{BaseURL: "/"}
+	}
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = "/"
+	}
+	return cfg
+}
+
 func main() {
+	site := loadConfig()
+
 	files, _ := filepath.Glob("content/*.md")
 
 	var posts []postInfo
@@ -85,6 +112,7 @@ func main() {
 		postsJSON, _ := json.Marshal(summaries)
 		f, _ := os.Create("docs/index.html")
 		indexTmpl.ExecuteTemplate(f, "base", IndexData{
+			Site:      site,
 			PostsJSON: template.JS(postsJSON),
 		})
 		f.Close()
@@ -103,6 +131,7 @@ func main() {
 		os.MkdirAll(outDir, 0755)
 		f, _ := os.Create(filepath.Join(outDir, "index.html"))
 		postTmpl.ExecuteTemplate(f, "base", PostData{
+			Site:  site,
 			Title: p.summary.Title,
 			Date:  p.summary.Date,
 			Tags:  p.tags,

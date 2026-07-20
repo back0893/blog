@@ -2,7 +2,7 @@
 
 {{define "content"}}
 <main class="max-w-2xl mx-auto px-4 py-12">
-  <a href="/" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+  <a href="{{.Site.BaseURL}}" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
     </svg>
@@ -29,7 +29,7 @@
 
   <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
     {{if .Prev}}
-    <a href="/posts/{{.Prev.Slug}}/" class="text-gray-500 hover:text-gray-900 transition-colors">
+    <a href="{{.Site.BaseURL}}/posts/{{.Prev.Slug}}/" class="text-gray-500 hover:text-gray-900 transition-colors">
       ← {{.Prev.Title}}
     </a>
     {{else}}
@@ -37,7 +37,7 @@
     {{end}}
 
     {{if .Next}}
-    <a href="/posts/{{.Next.Slug}}/" class="text-gray-500 hover:text-gray-900 transition-colors">
+    <a href="{{.Site.BaseURL}}/posts/{{.Next.Slug}}/" class="text-gray-500 hover:text-gray-900 transition-colors">
       {{.Next.Title}} →
     </a>
     {{else}}
