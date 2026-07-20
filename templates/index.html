@@ -1,0 +1,72 @@
+{{define "content"}}
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <h1 class="text-3xl font-bold tracking-tight mb-8">文章列表</h1>
+
+  <div class="space-y-6" id="post-list"></div>
+
+  <div class="flex justify-center gap-1 mt-12" id="pagination"></div>
+</main>
+
+<script>
+  const POSTS = {{.PostsJSON}};
+  const PAGE_SIZE = 10;
+
+  let page = 0;
+  const totalPages = Math.max(1, Math.ceil(POSTS.length / PAGE_SIZE));
+
+  function renderPost(post) {
+    const tagsHTML = (post.tags || []).map(t =>
+      `<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">${t}</span>`
+    ).join('');
+
+    return `
+      <a href="/posts/${post.slug}/" class="block group">
+        <article class="border border-gray-200 rounded-lg p-5 hover:border-gray-400 hover:shadow-sm transition-all">
+          <h2 class="text-lg font-semibold group-hover:text-blue-600 transition-colors">${post.title}</h2>
+          <p class="text-sm text-gray-400 mt-1">${post.date || ''}</p>
+          ${tagsHTML ? `<div class="flex gap-2 mt-3">${tagsHTML}</div>` : ''}
+        </article>
+      </a>`;
+  }
+
+  function renderPage() {
+    if (POSTS.length === 0) {
+      document.getElementById('post-list').innerHTML =
+        '<p class="text-gray-400 text-center py-12">还没有文章</p>';
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    const start = page * PAGE_SIZE;
+    const slice = POSTS.slice(start, start + PAGE_SIZE);
+    document.getElementById('post-list').innerHTML = slice.map(renderPost).join('');
+
+    let html = '';
+    html += `<button onclick="goPage(${page - 1})" ${page === 0 ? 'disabled' : ''}
+      class="px-3 py-1.5 text-sm rounded border border-gray-200 ${page === 0 ? 'text-gray-300 cursor-not-allowed' : 'hover:border-gray-400 transition-colors'}">上一页</button>`;
+
+    for (let i = 0; i < totalPages; i++) {
+      if (i === page) {
+        html += `<button class="px-3 py-1.5 text-sm rounded bg-gray-900 text-white font-medium">${i + 1}</button>`;
+      } else {
+        html += `<button onclick="goPage(${i})"
+          class="px-3 py-1.5 text-sm rounded border border-gray-200 hover:border-gray-400 transition-colors">${i + 1}</button>`;
+      }
+    }
+
+    html += `<button onclick="goPage(${page + 1})" ${page >= totalPages - 1 ? 'disabled' : ''}
+      class="px-3 py-1.5 text-sm rounded border border-gray-200 ${page >= totalPages - 1 ? 'text-gray-300 cursor-not-allowed' : 'hover:border-gray-400 transition-colors'}">下一页</button>`;
+
+    document.getElementById('pagination').innerHTML = html;
+  }
+
+  function goPage(p) {
+    if (p < 0 || p >= totalPages) return;
+    page = p;
+    renderPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  renderPage();
+</script>
+{{end}}

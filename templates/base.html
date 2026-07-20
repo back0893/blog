@@ -1,8 +1,48 @@
+{{define "base"}}
 <!DOCTYPE html>
-<html>
-<head><title>{{.Title}}</title></head>
-<body>
-  <h1>{{.Title}}</h1>
-  {{.Body}}
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{block "title" .}}My Blog{{end}}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  {{block "content" .}}{{end}}
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
 </body>
 </html>
+{{end}}
