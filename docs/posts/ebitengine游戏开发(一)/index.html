@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>初始化博客 - My Blog</title>
+  <title>Ebitengine游戏开发(一) - My Blog</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
@@ -45,7 +45,7 @@
   </a>
 
   <header class="mb-8">
-    <h1 class="text-3xl font-bold tracking-tight">初始化博客</h1>
+    <h1 class="text-3xl font-bold tracking-tight">Ebitengine游戏开发(一)</h1>
     <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
       <time>2026-07-21</time>
     </div>
@@ -54,32 +54,59 @@
       
       <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">Go</span>
       
-      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">前端</span>
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">游戏</span>
       
     </div>
     
   </header>
 
   <article class="prose text-gray-700">
-    <p>这是一个初始化博客的记录。</p>
-<ol>
-<li>使用简单的blog和templates模板生成一个静态博客。</li>
-<li>不需要额外的模板和其他的css 就是简单的模板</li>
-<li>todo 后续[添加css，js]</li>
-</ol>
+    <p>记录一下使用ebitengine游戏开发的过程
+为什么要开发游戏，为什么选着Ebitengine？
+其实没有那么多为什么，单存就是我想开发一个游戏，我想使用Ebitengine来开发一个游戏，然后我刚好找到了一本书教我
+<a href="https://yumenaka.github.io/ebitengine-book-cn/">Ebitengine游戏开发</a></p>
+<h3>画图和帧</h3>
+<pre><code class="language-lang=&quot;go&quot;">type Game struct {
+	block *ebiten.Image
+	y     float64
+	g     float64
+	vy    float64
+}
+
+func (g *Game) Update() error {
+	return nil
+}
+
+func (g *Game) Draw(screen *ebiten.Image) {
+    screen.Fill(color.White)
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		g.vy = -3
+	}
+	g.vy += g.g
+	g.y += g.vy
+	y := 180 + g.y
+	if y &gt;= 180 {
+		y = 180
+	}
+	op := &amp;ebiten.DrawImageOptions{}
+	op.GeoM.Translate(180, y)
+	screen.DrawImage(g.block, op)
+}
+</code></pre>
+<p>每次调用Draw时 都会去画面上重复的绘制，所以不能再其中定义需要逃逸的变量(栈逃逸)
+所以如果vy 每次初始化后赋值 那么会导致 其中的黑色方框无法移动
+好了你已经知道全部的基础知识了，可以开始来写一个飞天老鼠了</p>
 
   </article>
 
   <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
     
-    <a href="/blog/posts/ebitengine%e6%b8%b8%e6%88%8f%e5%bc%80%e5%8f%91%28%e4%b8%80%29/" class="text-gray-500 hover:text-gray-900 transition-colors">
-      ← Ebitengine游戏开发(一)
-    </a>
+    <span class="text-gray-300">← 上一篇</span>
     
 
     
-    <a href="/blog/posts/%e4%b8%ba%e4%bb%80%e4%b9%88%e5%bc%80%e5%8f%91%e8%bf%99%e4%b8%aa%e5%8d%9a%e5%ae%a2%ef%bc%9f/" class="text-gray-500 hover:text-gray-900 transition-colors">
-      为什么开发这个博客？ →
+    <a href="/blog/posts/%e5%88%9d%e5%a7%8b%e5%8c%96%e5%8d%9a%e5%ae%a2/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      初始化博客 →
     </a>
     
   </div>
