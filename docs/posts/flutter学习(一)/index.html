@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>win下安装gcc - My Blog</title>
+  <title>flutter学习(一) - My Blog</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
@@ -45,53 +45,43 @@
   </a>
 
   <header class="mb-8">
-    <h1 class="text-3xl font-bold tracking-tight">win下安装gcc</h1>
+    <h1 class="text-3xl font-bold tracking-tight">flutter学习(一)</h1>
     <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
-      <time>2026-08-02</time>
+      <time>2026-08-06</time>
     </div>
     
     <div class="flex gap-2 mt-4">
       
-      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">Go</span>
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">dart</span>
       
-      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">gcc</span>
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">flutter</span>
       
     </div>
     
   </header>
 
   <article class="prose text-gray-700">
-    <p>因为MinGW-w64 已经不提供 gcc 的发布版本 导致我以往安装经验丢失了，需要重新记录下如何安装 才能让cgo使用</p>
+    <h1>学习记录</h1>
+<h2>widget 是否可以变？</h2>
+<ul>
+<li>不能 这和vue差不多 widget只要创建了 就不能改变了，每次都是重建</li>
+</ul>
 <ol>
-<li>包管理
-对没错 win下也有包管理 只是用的比较少
-使用Scoop包管理器（最快捷）​​：如果你喜欢命令行，这是最现代、最简洁的方法。只需在PowerShell中执行 scoop install gcc 即可自动完成安装和环境配置</li>
+<li>stateless的widget能否变ui？
+它本省不能 但是如果子组件是有状态的，当子组件的状态改变时，子组件会重新build，从而改变ui。
+这点和vue有直观的不同 vue中如果不绑定属性,那么组件的ui不会改变。</li>
 </ol>
-<p>2.使用MSYS2
-它提供了一个类似Linux的包管理环境，后续安装其他依赖库（如zlib、openssl）也非常方便
-从 https://www.msys2.org/下载并安装MSYS2。</p>
-<ul>
-<li>打开“MSYS2 UCRT64”终端，执行以下命令安装GCC：</li>
-</ul>
-<pre><code>        pacman -Syu
-        pacman -S mingw-w64-ucrt-x86_64-gcc
-</code></pre>
-<ul>
-<li>安装完成后，将 <code>C:\msys64\ucrt64\bin</code> 路径添加到系统环境变量 <code>PATH</code> 中</li>
-</ul>
 
   </article>
 
   <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
     
-    <a href="/blog/posts/dart%e5%ad%a6%e4%b9%a0%e8%ae%b0%e5%bd%95/" class="text-gray-500 hover:text-gray-900 transition-colors">
-      ← dart学习记录
-    </a>
+    <span class="text-gray-300">← 上一篇</span>
     
 
     
-    <a href="/blog/posts/%e9%9d%a2%e8%af%95%e6%97%b6%e5%9b%9e%e7%ad%94%e9%94%99%e8%af%af%e7%9a%84%e8%ae%b0%e5%bd%95/" class="text-gray-500 hover:text-gray-900 transition-colors">
-      面试时回答错误的记录 →
+    <a href="/blog/posts/dart%e5%ad%a6%e4%b9%a0%e8%ae%b0%e5%bd%95/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      dart学习记录 →
     </a>
     
   </div>

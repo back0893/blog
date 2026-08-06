@@ -1,6 +1,6 @@
 ---
 title: win下安装gcc
-date: 2026-07-29
+date: 2026-08-02
 tags: [Go, gcc]
 draft: false
 ---
