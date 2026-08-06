@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dart学习记录 - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">dart学习记录</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-07-29</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">dart</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <p>记录一下学习dart过程中和其他语言不一样的点</p>
+<ol>
+<li>futureOr 可以返回一个future，也可以返回一个值</li>
+<li>package 定义文件可以统一返回多个文件</li>
+<li>bin目录不能直接引用lib目录下的文件，需要通过package引用</li>
+<li>一个项目文件夹 可以管理多个sub-package</li>
+</ol>
+<ul>
+<li>根目录下的pubspec.yaml文件可以定义多个sub-package</li>
+<li>每个sub-package的pubspec.yaml添加依赖的工作区</li>
+</ul>
+<ol start="5">
+<li>对json进行解析，有了新的解析写法</li>
+</ol>
+<pre><code>static Summary fromJson(Map&lt;String, Object?&gt; json) {
+  // 需要手动检查每个字段是否存在
+  if (json.containsKey('titles') &amp;&amp; 
+      json.containsKey('pageid') &amp;&amp; 
+      json.containsKey('description')) {
+    // 还要手动类型转换
+    final titles = json['titles'] as Map&lt;String, Object?&gt;;
+    final pageid = json['pageid'] as int;
+    // ... 很多重复代码
+    return Summary(...);
+  } else if (...) {
+    // 另一种情况
+  } else {
+    throw FormatException('...');
+  }
+}
+</code></pre>
+<p>每次解析json都需要手动检查每个字段是否存在，手动类型转换，手动返回值。</p>
+<p>新的写法</p>
+<pre><code>static Summary fromJson(Map&lt;String, Object?&gt; json) {
+  return switch (json) {
+    // 模式1：包含 description 字段的 JSON
+    {
+      'titles': final Map&lt;String, Object?&gt; titles,
+      'pageid': final int pageid,
+      'extract': final String extract,
+      'extract_html': final String extractHtml,
+      'lang': final String lang,
+      'dir': final String dir,
+      'content_urls': {
+        'desktop': {'page': final String url},
+        'mobile': {'page': String _},
+      },
+      'description': final String description,
+    } =&gt;
+      Summary(
+        titles: TitlesSet.fromJson(titles),
+        pageid: pageid,
+        extract: extract,
+        extractHtml: extractHtml,
+        lang: lang,
+        dir: dir,
+        url: url,
+        description: description,
+      ),
+  }
+}
+</code></pre>
+<p>和if-case也有类似的写法</p>
+<pre><code>if (json case {
+  'canonical': final String canonical,
+  'normalized': final String normalized,
+  'display': final String display,
+}) {
+  return TitlesSet(
+    canonical: canonical,
+    normalized: normalized,
+    display: display,
+  );
+}
+</code></pre>
+<p>都是可以加速解析json的</p>
+<ol start="6">
+<li>测试文件和go一样 都是_test 结尾，不同是使用main和group包裹测试代码</li>
+</ol>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <a href="/blog/posts/win%e4%b8%8b%e5%ae%89%e8%a3%85gcc/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      ← win下安装gcc
+    </a>
+    
+
+    
+    <a href="/blog/posts/%e9%9d%a2%e8%af%95%e6%97%b6%e5%9b%9e%e7%ad%94%e9%94%99%e8%af%af%e7%9a%84%e8%ae%b0%e5%bd%95/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      面试时回答错误的记录 →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
