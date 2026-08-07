@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>flutter学习(一) - My Blog</title>
+  <title>flutter学习(二) - My Blog</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
@@ -45,9 +45,9 @@
   </a>
 
   <header class="mb-8">
-    <h1 class="text-3xl font-bold tracking-tight">flutter学习(一)</h1>
+    <h1 class="text-3xl font-bold tracking-tight">flutter学习(二)</h1>
     <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
-      <time>2026-08-06</time>
+      <time>2026-08-07</time>
     </div>
     
     <div class="flex gap-2 mt-4">
@@ -62,28 +62,32 @@
 
   <article class="prose text-gray-700">
     <h1>学习记录</h1>
-<h2>widget 是否可以变？</h2>
-<ul>
-<li>不能 这和vue差不多 widget只要创建了 就不能改变了，每次都是重建</li>
-</ul>
+<h2>构造函数</h2>
+<p>dart中的构造函数是一个特殊的方法 虽然是在类定义的作用域内部 但是它不是普通方法 需要使用className.functionName()来调用
+是为了通知编译器 这是一个构造函数 而不是普通方法</p>
+<h2>盒子和widget</h2>
+<p>这部分可以参考前端的盒子模型，本质是一样的 拥有大小和外边框等属性 本质ui组合就是一个一个的盒子堆叠组合
+不同点是 盒子的父盒子大小可能被子盒子影响 而widget的父widget大小决定了子widget的大小</p>
+<h2>响应式设计</h2>
+<p>使用LayoutBuilder时会发现 就算没有使用setState 但是widget也会被重建 这是应为父widget的布局时 约束变化自动触发，这样就实现了响应式设计
+但是注意这不能代表可以不使用setState更新</p>
+<h2>数据变更和监听</h2>
 <ol>
-<li>stateless的widget能否变ui？
-它本省不能 但是如果子组件是有状态的，当子组件的状态改变时，子组件会重新build，从而改变ui。
-这点和vue有直观的不同 vue中如果不绑定属性,那么组件的ui不会改变。</li>
+<li>setState方法可以更新状态,需要手动的触发，vue3也有类似的方法</li>
+<li>ListenableBuilder 可以监听数据变化，当数据变化时，会自动触发build方法
+这2个方法都是用来变更ui的 都可以使用只是适用的范围和方便程度不一样 ListenableBuilder更适合数据被多个widget依赖或者需要夸多个widget传递数据的情况</li>
 </ol>
 
   </article>
 
   <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
     
-    <a href="/blog/posts/flutter%e5%ad%a6%e4%b9%a0%28%e4%ba%8c%29/" class="text-gray-500 hover:text-gray-900 transition-colors">
-      ← flutter学习(二)
-    </a>
+    <span class="text-gray-300">← 上一篇</span>
     
 
     
-    <a href="/blog/posts/dart%e5%ad%a6%e4%b9%a0%e8%ae%b0%e5%bd%95/" class="text-gray-500 hover:text-gray-900 transition-colors">
-      dart学习记录 →
+    <a href="/blog/posts/flutter%e5%ad%a6%e4%b9%a0%28%e4%b8%80%29/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      flutter学习(一) →
     </a>
     
   </div>
