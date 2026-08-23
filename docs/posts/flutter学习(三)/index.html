@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>flutter学习(三) - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">flutter学习(三)</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-08-22</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">dart</span>
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">flutter</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <h1>Flutter 状态同步问题总结：修改设备名称后 UI 不更新</h1>
+<h2>1. 为什么会有这个问题</h2>
+<p>在 Flutter 中，<strong>页面之间传递参数是&quot;快照&quot;传递</strong>。当通过 <code>Navigator.push</code> 打开子页面时，传递的 <code>device</code> 对象被&quot;冻结&quot;在子页面中。即使父页面数据源刷新了，子页面也不会感知到变化，因为：</p>
+<ul>
+<li><code>Navigator.push</code> 是一次性路由，不会自动重建已打开的页面</li>
+<li>Flutter 是<strong>声明式 UI</strong>，UI 不会自动随数据变化，除非显式监听数据变化</li>
+<li><code>DeviceItem</code> 是一个<strong>不可变对象</strong>（所有字段都是 <code>final</code>），不能直接修改属性</li>
+</ul>
+<h2>2. 这个问题是如何产生的</h2>
+<p>具体流程如下：</p>
+<pre><code>用户点击&quot;修改设备名称&quot; → 弹出对话框 → 输入新名称 → 确认
+  ↓
+调用 API 成功更新到服务器
+  ↓
+子页面直接修改了 item.deviceName = newName   ← ❌ 不可变对象不能直接修改
+  ↓
+调用 onRefresh 回调通知父页面
+  ↓
+父页面更新了 refreshTrigger.value = item     ← ❌ 同一个引用，ValueNotifier 不会触发
+  ↓
+父页面 _refresh() 从服务器重新获取数据        ← ✅ 父页面列表更新了
+  ↓
+但子页面没有变化                            ← ❌ 子页面 widget.device 还是旧值，且没有监听变化
+</code></pre>
+<p>关键问题有三个：</p>
+<ol>
+<li><strong>直接修改了不可变对象的属性</strong> — <code>DeviceItem</code> 字段都是 <code>final</code></li>
+<li><strong><code>ValueNotifier</code> 需要新引用才能触发</strong> — 同一个对象赋值不会触发 listener</li>
+<li><strong>子页面没有监听 <code>ValueNotifier</code></strong> — 用了 <code>widget.device.value</code> 读取值，但没有监听变化</li>
+</ol>
+<h2>3. 这个问题的解决办法</h2>
+<p><strong>核心思路</strong>：使用 <code>ValueNotifier&lt;T&gt;</code> 作为共享状态源，让父页面和子页面监听同一个 notifier。</p>
+<h3>解决办法分三步</h3>
+<h4>第一步：父页面创建 <code>ValueNotifier</code> 并传递给子页面</h4>
+<pre><code class="language-dart">// 父页面
+final refreshTrigger = ValueNotifier(DeviceItem.empty());
+
+// 选择设备时
+refreshTrigger.value = device; // 设置初始值
+Navigator.push(
+  MaterialPageRoute(
+    builder: (_) =&gt; DeviceConfigMenuPage(
+      device: refreshTrigger, // 传递同一个 notifier
+    ),
+  ),
+);
+</code></pre>
+<h4>第二步：子页面用 <code>ValueListenableBuilder</code> 监听变化</h4>
+<pre><code class="language-dart">// 子页面
+@override
+Widget build(BuildContext context) {
+  return ValueListenableBuilder&lt;DeviceItem&gt;(
+    valueListenable: widget.device,
+    builder: (context, currentDevice, child) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(currentDevice.deviceName), // ← 使用 builder 中的值
+        ),
+      );
+    },
+  );
+}
+</code></pre>
+<h4>第三步：修改数据时创建新对象 + 更新 notifier</h4>
+<pre><code class="language-dart">// 修改成功后
+final updatedDevice = item.copyWith(deviceName: newName); // 创建新对象
+widget.onRefresh?.call(updatedDevice); // 通知父页面
+// 父页面收到后：refreshTrigger.value = updatedDevice → 触发 listener
+</code></pre>
+<h2>4. 最后我是如何解决的</h2>
+<p><strong>最终方案</strong>：使用 <code>ValueNotifier&lt;DeviceItem&gt;</code> 作为共享状态源。</p>
+<h3>父页面</h3>
+<pre><code class="language-dart">// 定义共享的 ValueNotifier
+final refreshTrigger = ValueNotifier(DeviceItem.empty());
+
+// 监听变化，自动刷新列表
+refreshTrigger.addListener(() {
+  _refresh();      // 刷新设备列表
+  setState(() {}); // 重建 UI
+});
+
+// 选择设备时传递同一个 notifier
+void _selectDevice(DeviceItem device) {
+  refreshTrigger.value = device; // 设置初始值
+  Navigator.push(
+    MaterialPageRoute(
+      builder: (_) =&gt; DeviceConfigMenuPage(
+        device: refreshTrigger, // 共享同一个 notifier
+        onRefresh: (newDevice) {
+          refreshTrigger.value = newDevice; // 更新触发刷新
+        },
+      ),
+    ),
+  );
+}
+</code></pre>
+<h3>子页面</h3>
+<pre><code class="language-dart">// 参数改为 ValueNotifier
+final ValueNotifier&lt;DeviceItem&gt; device;
+
+// 用 ValueListenableBuilder 监听变化
+@override
+Widget build(BuildContext context) {
+  return ValueListenableBuilder&lt;DeviceItem&gt;(
+    valueListenable: widget.device,
+    builder: (context, currentDevice, child) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(currentDevice.deviceName), // 自动更新
+        ),
+      );
+    },
+  );
+}
+
+// 修改名称时创建新对象
+Future&lt;void&gt; _changeDeviceName(DeviceItem item) async {
+  // ... 弹出对话框获取新名称 ...
+  await api.updateDevice(item.macId, newName);
+  widget.onRefresh?.call(item.copyWith(deviceName: newName)); // 传新对象
+}
+</code></pre>
+<h2>关键收获</h2>
+<ul>
+<li><code>ValueNotifier</code> 只有在 <code>value</code> 被<strong>重新赋值</strong>（新引用）时才触发 listener</li>
+<li>不可变对象必须用 <code>copyWith</code> 创建新对象，不能直接修改属性</li>
+<li><code>ValueListenableBuilder</code> 是监听 <code>ValueNotifier</code> 变化并自动重建 UI 的标准方式</li>
+<li>共享同一个 <code>ValueNotifier</code> 实例才能在父页面和子页面之间同步状态</li>
+</ul>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <span class="text-gray-300">← 上一篇</span>
+    
+
+    
+    <a href="/blog/posts/%e6%84%9f%e8%b0%a2/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      感谢 →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
