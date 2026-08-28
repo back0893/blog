@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>记服务处理速度优化(1) - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">记服务处理速度优化(1)</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-08-28</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">GO</span>
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">service</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <h1>背景</h1>
+<p>公司服务器，使用接入小智的ESP32设备后，使用的自研服务并且将tts，vad，asr等服务全部外挂，通过http，ws等形式提供调用，好处为简化了核心服务器的开发逻辑，坏处为需要额外的网络开销。
+作为我接手之前，服务器功能基本实现，但是对处理速度慢，部分功能缺失或者无法使用，只能实现最基本的对话功能。
+在对缺失和无法使用的功能进行修复后，开始对处理速度进行优化。</p>
+<h2>优化内容发现模式</h2>
+<ol>
+<li>让ai扫描业务流程，从入口开始开始扫描，结束为出口，扫描步骤，主要用来发现同步处理或者阻塞步骤。</li>
+<li>对外部调用添加耗时日志，通过日志记录外部调用的耗时，用来评估是否外部调用是否需要修改或者改为内嵌式</li>
+<li>各步骤添加日志，记录耗时，用来评估vad结束到大模型首字，tts合成语音等步骤的耗时，用来评估优化是否必要</li>
+<li>requestid+timestamp 日志做端到端链路拆解，用来评估每个请求的处理时间。</li>
+</ol>
+<h2>优化措施和考虑</h2>
+<ol>
+<li>将ws的同步读写拆分异步，读阻塞不影响写，可以优化用户的响应速度。</li>
+<li>将读操作和业务逻辑分离，同时保持目前的同步业务逻辑不变，这样是因为
+<ul>
+<li>目前业务交互为半双工，同步逻辑不会影响其处理速度</li>
+<li>之前的业务逻辑实现都是同步下，没有考虑并发，如果修改需要大面积修改</li>
+<li>最大瓶颈在后续的llm生成，这点在优化后也可以发现</li>
+</ul>
+</li>
+<li>是否可以使用目前已经有的开源项目，直接替换目前使用ai改写的</li>
+</ol>
+<h2>优化内容</h2>
+<ol>
+<li>ws接入层，将ws的同步读写拆分异步，读阻塞不影响写，可以优化用户的响应速度。</li>
+<li>将部分同步命令改为异步队列，消除读循环中的循环反压</li>
+<li>读写分离后，暴露VAD处理缓慢问题，同一个设备可能多个ws链接问题，旧链接直接关闭，都做了额外优化。</li>
+<li>外部VAD服务优化，其每帧都需解析，改为接受裸数据，解析使用服务器实现，减少外部VAD的计算量</li>
+</ol>
+<h2>优化效果对比</h2>
+<p>| 指标 | 改造前 | 改造后 | 差值 |
+|------|--------|--------|------|
+| 首字延迟(30 次平均) | 4500ms|2400ms | 2100ms |
+| VAD(30 次平均) | 40ms|4ms | 36ms |</p>
+<h2>后续优化</h2>
+<p>目标进一步压缩首字语音，争取在2秒内完成</p>
+<ol>
+<li>llm首token优化，但是我不太熟，这里需要看git仓库来优化</li>
+<li>对tts部分进行优化，对tts合成部分的缓存，并发都可以进行优化</li>
+</ol>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <span class="text-gray-300">← 上一篇</span>
+    
+
+    
+    <a href="/blog/posts/flutter%e5%ad%a6%e4%b9%a0%28%e4%b8%89%29/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      flutter学习(三) →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
