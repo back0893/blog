@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>一种有序并发方法 - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">一种有序并发方法</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-08-29</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">Go</span>
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">并发</span>
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">有戏</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <h1>对于并发处理</h1>
+<p>对于并发来说，如果都是无状态的，那么确实可以使用并发来处理，可以极大的加大处理效率
+但是对于处理音频，文字，视频流等有序数据时，需要考虑数据的顺序问题，虽然可以将一个流的数据拆分成为多个来并发处理，但是数据的顺序不能改变
+这样就是回到一个问题，我应该在并发后如何保持数据的顺序，一般的解决办法有</p>
+<ol>
+<li>使用seg计数，并发处理之前，先进行排序，然后并发完成后，根据seg计数来合并数据，但是这样会导致一个问题，就是排列在后先处理完成，这样需要使用缓存或者队列来保持数据的顺序</li>
+<li>使用channel来保证，但是如果在处理时并发处理，依然会有这样的问题</li>
+<li>拆分并发- segment-channel 这是对上述2个方法进行一个组合，就是先将数据拆分成成为多个大组，然后再小组之间使用channel来保证顺序，大组使用一个channel的队列顺序读取</li>
+</ol>
+<h2>GO语言实现</h2>
+<ol>
+<li>并发处理数据，无序的并发，但是内部有序写入</li>
+</ol>
+<pre><code>segments:=make([]chan []byte,20)
+for i:=0;i&lt;20;i++{
+    segments[i]=make(chan []byte,5)
+}
+lock:=make(chan struct{},5)
+for _,seg:=range segments{
+    go func(ch chan []byte){
+        lock&lt;-struct{}{}
+        defer func(){
+            &lt;-lock
+            close(ch)
+        }()
+
+        //todo 处理数据
+        ch &lt;- []byte(&quot;hello&quot;)
+    }(seg)
+}
+</code></pre>
+<ol start="2">
+<li>顺序消费</li>
+</ol>
+<pre><code>for _,seg:=range segments{
+    for data:=range seg{
+        //todo 消费数据
+    }
+}
+</code></pre>
+<p>这种方式有着明显的优点</p>
+<ol>
+<li>无需显示排序-对并发数据进行一个排序或者优先队列</li>
+<li>无锁-使用channel来保证顺序，避免了锁的使用</li>
+<li>背压友好-当消费者消费慢或者排位在后的生成会被压制，不会一直生成数据</li>
+</ol>
+<h2>执行流程可视化</h2>
+<p>并发合成阶段（无序执行，但内部有序）:
+┌─────────┐  ┌─────────┐  ┌─────────┐
+│ seg-0   │  │ seg-1   │  │ seg-2   │  ...  ← 最多 5 个同时运行
+│ goroutine│  │ goroutine│  │ goroutine│
+└────┬────┘  └────┬────┘  └────┬────┘
+│            │            │
+▼            ▼            ▼
+ch[0]        ch[1]        ch[2]       ← 每个 segment 独享 channel
+│            │            │</p>
+<p>顺序消费阶段（严格按索引）:
+│            │            │
+▼            ▼            ▼
+读取ch[0]    读取ch[1]    读取ch[2]    ← 必须 0 读完才能读 1
+全部帧FIFO   全部帧FIFO   全部帧FIFO</p>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <span class="text-gray-300">← 上一篇</span>
+    
+
+    
+    <a href="/blog/posts/%e8%ae%b0%e6%9c%8d%e5%8a%a1%e5%a4%84%e7%90%86%e9%80%9f%e5%ba%a6%e4%bc%98%e5%8c%96%281%29/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      记服务处理速度优化(1) →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
