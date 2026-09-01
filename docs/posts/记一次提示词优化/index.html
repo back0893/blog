@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>记一次提示词优化 - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">记一次提示词优化</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-08-22</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">提示词优化</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <h1>记一次提示词优化</h1>
+<p>对话机器人的提示词之前存在问题，其问题就是3个大类</p>
+<ol>
+<li>幻觉 回答中经常出现脱离人物卡，上下文和记忆，进行扩充回答，模拟不存在的场景对话</li>
+<li>突破界限 回答中出现攻击性语言，攻击性的嘲讽</li>
+<li>注意力涣散，对话达到5轮以后，开始出现重复回答，或者突破界限</li>
+<li>主动性或者质量不足，回答无法引起对话人兴趣，主动的继续对话</li>
+</ol>
+<h1>优化过程</h1>
+<ol>
+<li>
+<p>加入cot思维链
+使用提示词，引导模型进行cot思维，避免出现幻觉和突破界限，同时提升回答的质量，让对话人有继续的兴趣
+问题：太慢了，加入cot后，回答速度变慢了，因为需要等到其cot思维完成，才能将回答返回给对话人</p>
+</li>
+<li>
+<p>优化回答速度
+分析之前的提示词，就是cot思维链，其思考过程太多，太复炸，将本再上下文中的信息，也作为思考信息，导致回答速度变慢
+对cot思维链进行删除，删除原本可以通过上下文直接回答，只保留 2个部分（用户说了什么 / 角色该怎么回答）</p>
+</li>
+<li>
+<p>回答格式不被模型遵守
+思维链的思考回答和回答，都需要被模型输出，然后结构，输出给对话人。其中思考过程可以被忽略，只保留回答。但是在提示词边长后，模型
+遵守回答格式明显出现异常或者遗忘的情况。这样就需要进行调整，目前是在system提示词的最后部分，追加一个输出的格式，使用少量样本来
+让模型学习回答的格式。解析器实现为一个稀疏解析器，不需要全闭合，只需要解析出开始标签就可以输出</p>
+</li>
+</ol>
+<pre><code>&lt;think&gt;
+[思考内容]
+&lt;/think&gt;
+&lt;response&gt;
+[回答]
+&lt;/response&gt;
+</code></pre>
+<ol start="4">
+<li>
+<p>优化提示词，减少提示词的长度
+为了对回答和场景等进行限制，在不停的加入规则，伴随提示词的长度增加，其约束效果没有提示，反而在变弱还在拖累回答速度
+而且还出现了，规则之间的冲突，导致模型在规则之间进行切换，不遵守任何规则。
+这就很简单了，优化提示词，减少规则的数量，减少规则的复杂度，同时规则的重要程度排序，先遵守重要的规则，再遵守不重要的规则。</p>
+</li>
+<li>
+<p>为什么不使用少量样本？
+因为少量样本，提供给模型学习，会导致一个问题，模型回答基本和样本回答一致，没有变化，在对话机器人的场景，导致互动性和变化性不够好</p>
+</li>
+<li>
+<p>优化动态提示词
+对于动态提示词，需要根据对话人的问题，动态的生成提示词，其中部分原本内容为空的部分，直接删除。而不是输出空字段
+这样也可以避免模型被空字段所干扰，导致回答的格式被改变。</p>
+</li>
+<li>
+<p>加入自检提示词
+最后使用一个闸门，作为最后检测提示词，让模型最其输出内容在输出前，进行一次自检，确保其输出的内容符合要求。</p>
+</li>
+</ol>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <a href="/blog/posts/%e8%ae%b0%e6%9c%8d%e5%8a%a1%e5%a4%84%e7%90%86%e9%80%9f%e5%ba%a6%e4%bc%98%e5%8c%96%281%29/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      ← 记服务处理速度优化(1)
+    </a>
+    
+
+    
+    <a href="/blog/posts/flutter%e5%ad%a6%e4%b9%a0%28%e4%b8%89%29/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      flutter学习(三) →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
