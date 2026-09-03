@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>长期记忆的实现 - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">长期记忆的实现</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-09-03</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">记忆</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <p>对于ai的记忆来说，本质上是一种数据的存储和检索。需要从过去的对话数据中，提取用户的信息，然后将其存储起来，后续可以通过检索这些信息，来实现记忆的功能。
+那么对于记忆生命周期来说，其包括以下几个阶段：
+入库-&gt;结构化-&gt;存储-&gt;检索-&gt;使用</p>
+<h1>记忆可以分为两种：</h1>
+<h2>短期记忆</h2>
+<p>用户当前的对话session，用于本轮会话的上下文记忆。其中使用token预算作为计算指标，近期窗口，压缩总结，缩短上下文对于token使用情况。
+话题topic，也是缩短上下文消耗一种手段，其通过向量等计算，可以过滤掉不相关的话题，目标也是压低上下文对于token的消耗。</p>
+<h3>模块的划分</h3>
+<ol>
+<li>
+<p>总结模块：一种滚动，增量变更的总结模块，旧总结+新增对话=新总结.</p>
+<ul>
+<li>一个会话中的对话轮次可以是无限的，但是其token预算是有限的</li>
+<li>使用增量更新，避免每次总结都是从头开始</li>
+</ul>
+</li>
+<li>
+<p>会话模块：用于存储用户当前的对话session，以及其相关的上下文信息。</p>
+<ul>
+<li>每个会话都有一个唯一的会话id，用于标识该会话</li>
+<li>对外提供添加和读取的接口 让客户端可以方便的调用，客户端不在需要管理会话的上下文信息</li>
+</ul>
+</li>
+<li>
+<p>话题路由模块：用于根据用户的对话话题，提取不同的上下文信息。</p>
+<ul>
+<li>依据用户的对话话题转变，提取不同的上下文信息和清空旧总结</li>
+</ul>
+</li>
+<li>
+<p>长期记忆模块：
+使用Milvus数据库，用于存储用户对话向量，sqlite用来储存原始信息，Milvus只负责向量的存储和检索。sqlite负责原始数据，用户画像等结构化，原始信息的存储和检索。
+长期记忆模块，需要对会话记录进行处理，从中提取信息，作为用户的长期记忆，还需要清洗数据，避免存储无效，冲突，不在作为长期记忆的信息。
+除了写入，还是需要有检索功能，用于根据用户的查询，来检索用户的信息。</p>
+</li>
+</ol>
+<h3>模块划分</h3>
+<ol>
+<li>数据提取模块：聚合对话记录，将用户的原始输入，使用llm提取出用户的信息，结构化</li>
+<li>记忆检测器：当新记忆和原本的记忆出现冲突，重复等情况时，如何处理</li>
+<li>反思模块：模拟人类回顾，用来进一步压缩</li>
+<li>记忆排序模块：根据用户的查询，对记忆进行排序，返回最相关的记忆，其中需要对记忆的频率+近因+否定+老化等因素进行打分后排序，这尤为重要，因为检索时，需要根据用户的查询，来判断最相关的记忆。这一步也是长期记忆模块的核心，其可以影响到用户对记忆的使用。</li>
+</ol>
+<p>长期记忆的检索流程：
+向量 → 排序(rerank) → 去噪 → 遗忘/频次(memory_rank) → 截断(top_k)</p>
+<h1>共有模块</h1>
+<ol>
+<li>sqlite存储：对外提供sqlite的写入和读取接口，用于存储原始数据，用户画像等结构化的数据保存和检索。</li>
+<li>milvus存储：对外提供milvus的写入和读取接口，用于存储用户对话向量，以及其相关的上下文信息</li>
+</ol>
+<p>|维度|长期记忆|短期记忆|
+|:--|:--|:--|
+|生命周期|持久，夸会话|临时，会话内|
+|存储|sqlite+milvus|sqlite|
+|何时写入|批量导入|每轮对话完成
+|检索方式|向量+评分|时间序+总结</p>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <span class="text-gray-300">← 上一篇</span>
+    
+
+    
+    <a href="/blog/posts/%e8%ae%b0%e4%b8%80%e6%ac%a1%e6%8f%90%e7%a4%ba%e8%af%8d%e4%bc%98%e5%8c%96/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      记一次提示词优化 →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
