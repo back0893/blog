@@ -109,12 +109,37 @@
 <li>sqlite存储：对外提供sqlite的写入和读取接口，用于存储原始数据，用户画像等结构化的数据保存和检索。</li>
 <li>milvus存储：对外提供milvus的写入和读取接口，用于存储用户对话向量，以及其相关的上下文信息</li>
 </ol>
-<p>|维度|长期记忆|短期记忆|
-|:--|:--|:--|
-|生命周期|持久，夸会话|临时，会话内|
-|存储|sqlite+milvus|sqlite|
-|何时写入|批量导入|每轮对话完成
-|检索方式|向量+评分|时间序+总结</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">维度</th>
+<th style="text-align:left">长期记忆</th>
+<th style="text-align:left">短期记忆</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">生命周期</td>
+<td style="text-align:left">持久，夸会话</td>
+<td style="text-align:left">临时，会话内</td>
+</tr>
+<tr>
+<td style="text-align:left">存储</td>
+<td style="text-align:left">sqlite+milvus</td>
+<td style="text-align:left">sqlite</td>
+</tr>
+<tr>
+<td style="text-align:left">何时写入</td>
+<td style="text-align:left">批量导入</td>
+<td style="text-align:left">每轮对话完成</td>
+</tr>
+<tr>
+<td style="text-align:left">检索方式</td>
+<td style="text-align:left">向量+评分</td>
+<td style="text-align:left">时间序+总结</td>
+</tr>
+</tbody>
+</table>
 
   </article>
 

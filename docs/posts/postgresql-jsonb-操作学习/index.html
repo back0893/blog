@@ -65,15 +65,52 @@
 <p>在构建 AI 用户画像、动态配置等半结构化数据场景时，选择正确的存储策略至关重要。本文基于实战经验，深入对比 GORM 中的两种方案，并详解如何使用 <code>gorm.Expr</code> 实现高性能的数据库级原子更新。</p>
 <hr>
 <h2>一、核心差异：<code>datatypes.JSON</code> vs <code>serializer:json</code></h2>
-<p>| 特性 | <code>datatypes.JSON</code> (推荐) | <code>serializer:json</code> (慎用) |
-| :--- | :--- | :--- |
-| <strong>底层存储</strong> | PostgreSQL <code>JSONB</code> / MySQL <code>JSON</code> | <code>TEXT</code> / <code>VARCHAR</code> |
-| <strong>数据库感知</strong> | <strong>是</strong>，数据库理解 JSON 内部结构 | <strong>否</strong>，仅视为普通字符串 |
-| <strong>查询能力</strong> | 支持原生 JSON 函数 (如 <code>@&gt;</code>, <code>?</code>) | 仅支持全文本匹配 (<code>LIKE</code>) |
-| <strong>索引支持</strong> | ✅ 支持 <strong>GIN 索引</strong>，查询极快 | ❌ 无法建立有效索引，全表扫描 |
-| <strong>更新机制</strong> | <strong>原子局部更新</strong> (数据库内部执行) | <strong>全量覆盖</strong> (应用层 Read-Modify-Write) |
-| <strong>并发安全</strong> | ✅ 原子操作，无竞争条件 | ❌ 高并发下必然导致数据覆盖 |
-| <strong>适用场景</strong> | 用户画像、标签系统、动态表单 | 简单配置、无需查询的静态 JSON |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">特性</th>
+<th style="text-align:left"><code>datatypes.JSON</code> (推荐)</th>
+<th style="text-align:left"><code>serializer:json</code> (慎用)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>底层存储</strong></td>
+<td style="text-align:left">PostgreSQL <code>JSONB</code> / MySQL <code>JSON</code></td>
+<td style="text-align:left"><code>TEXT</code> / <code>VARCHAR</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>数据库感知</strong></td>
+<td style="text-align:left"><strong>是</strong>，数据库理解 JSON 内部结构</td>
+<td style="text-align:left"><strong>否</strong>，仅视为普通字符串</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>查询能力</strong></td>
+<td style="text-align:left">支持原生 JSON 函数 (如 <code>@&gt;</code>, <code>?</code>)</td>
+<td style="text-align:left">仅支持全文本匹配 (<code>LIKE</code>)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>索引支持</strong></td>
+<td style="text-align:left">✅ 支持 <strong>GIN 索引</strong>，查询极快</td>
+<td style="text-align:left">❌ 无法建立有效索引，全表扫描</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>更新机制</strong></td>
+<td style="text-align:left"><strong>原子局部更新</strong> (数据库内部执行)</td>
+<td style="text-align:left"><strong>全量覆盖</strong> (应用层 Read-Modify-Write)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>并发安全</strong></td>
+<td style="text-align:left">✅ 原子操作，无竞争条件</td>
+<td style="text-align:left">❌ 高并发下必然导致数据覆盖</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>适用场景</strong></td>
+<td style="text-align:left">用户画像、标签系统、动态表单</td>
+<td style="text-align:left">简单配置、无需查询的静态 JSON</td>
+</tr>
+</tbody>
+</table>
 <p><strong>结论</strong>：只要涉及查询、局部修改或并发写，必须选择 <code>datatypes.JSON</code>。<code>serializer:json</code> 仅适用于“存进去，读出来，永不修改”的简单场景。</p>
 <hr>
 <h2>二、致命误区：全量更新 vs 原子更新</h2>

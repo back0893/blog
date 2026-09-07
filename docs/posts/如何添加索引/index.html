@@ -65,12 +65,42 @@
 <h1>索引添加</h1>
 <p>好了现在开始添加索引。既然是坐标表，那么必要的字段就是<code>id</code>,<code>device_id</code>,<code>timestamp</code>，如何添加呢？是为了device_id和timestamp分别添加？还是添加一个联合索引？
 这个需要先看看二级索引的叶子节点保存了什么。</p>
-<p>||sqlite|mysql|pg|
-|:--|:--|:--|:--|
-|二级索引叶子节点|rowid|主键|ctid(物理块号+偏移量)|
-|主键在表里|聚簇|聚簇|独立btree索引|
-|回表方式|rowid → 聚簇 B-tree 查|主键 → 聚簇 B-tree 查|ctid → 定位到堆页|
-|id条件能直接回表|不能|能|不能|</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:left">sqlite</th>
+<th style="text-align:left">mysql</th>
+<th style="text-align:left">pg</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">二级索引叶子节点</td>
+<td style="text-align:left">rowid</td>
+<td style="text-align:left">主键</td>
+<td style="text-align:left">ctid(物理块号+偏移量)</td>
+</tr>
+<tr>
+<td style="text-align:left">主键在表里</td>
+<td style="text-align:left">聚簇</td>
+<td style="text-align:left">聚簇</td>
+<td style="text-align:left">独立btree索引</td>
+</tr>
+<tr>
+<td style="text-align:left">回表方式</td>
+<td style="text-align:left">rowid → 聚簇 B-tree 查</td>
+<td style="text-align:left">主键 → 聚簇 B-tree 查</td>
+<td style="text-align:left">ctid → 定位到堆页</td>
+</tr>
+<tr>
+<td style="text-align:left">id条件能直接回表</td>
+<td style="text-align:left">不能</td>
+<td style="text-align:left">能</td>
+<td style="text-align:left">不能</td>
+</tr>
+</tbody>
+</table>
 <p>这就是二级索引的叶子节点保存的内容的差别导致的差异，其实依据这个差距，就可以看到mysql和pg的索引实现方式不同，sqlite和mysql类似</p>
 <ul>
 <li>pg的索引需要回表，但是因为ctid是物理块号+偏移量，所以不需要走b-tree，直接定位到堆页，然后才能通过id判断</li>

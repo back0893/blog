@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"go.yaml.in/yaml/v2"
 )
 
@@ -38,10 +39,16 @@ func ParseFile(path string) (*FrontMatter, string, error) {
 	if err := yaml.Unmarshal([]byte(parts[1]), fm); err != nil {
 		return nil, "", err
 	}
-
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.NewTable(
+				extension.WithTableCellAlignMethod(extension.TableCellAlignDefault),
+			),
+		),
+	)
 	// 用 goldmark 渲染正文
 	var buf bytes.Buffer
-	if err := goldmark.Convert([]byte(parts[2]), &buf); err != nil {
+	if err := md.Convert([]byte(parts[2]), &buf); err != nil {
 		return nil, "", err
 	}
 
