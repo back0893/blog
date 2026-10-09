@@ -117,6 +117,14 @@ wire的生成规则：依赖提供构造函数的签名来实现的，会依据�
 MessageConfig 正好是入口函数 initApp(cfg) 的参数（种子），终止
 </code></pre>
 <p>还有一点就是<code>wire.Build</code>的调用方就是需要生成的函数，其入参和出参就是依赖的声明和产出</p>
+<h2>添加新的服务器流程</h2>
+<ol>
+<li>定义proto文件，其中会有service和message，<code>kratos proto client</code>和<code>kratos proto server -t internal/service</code> 分别会生成对应的pb代码和接口定义</li>
+<li>为data，biz，service,server等层添加对应的实现代码，别忘记了为wire 提供构造函数</li>
+<li>在cmd目录下的入口，修改wire的集合，添加新的依赖提供函数,最后重新生成wire生成的代码文件
+对的 实现起来起来是这样 proto的实现和编译记住命令 就可以了
+然后就是各个层的实现和为wire提供构造函数集合，然后重新使用wire注入依赖</li>
+</ol>
 <h2>最后</h2>
 <p>kratos的调用流程，其实和其他框架差不多，不走注册中心就是ip注册，然后grpc客户端调用，然后grpc本身对外可以提供http路由
 那么大部分时候，gateway负责全部的对外暴露，然后内部在service负责组织调用biz层的逻辑
