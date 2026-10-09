@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kratos v2 学习记录 - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">kratos v2 学习记录</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-10-09</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">Go</span>
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">kratos</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <h1>日常牢骚</h1>
+<p>国庆放假玩游戏去了，发现想让ai帮我写点东西又不知道该写什么，总不能又cv其他的人的点子，写游戏吧。那为什么不先搞点点子</p>
+<h1>kratos v2 学习记录</h1>
+<p>新工作，需要使用kratos v2，所以需要学习一下。记录一下其中的内容(v2的文档官方就删除，虽然是v3了，但是v2的文档别删，归档也行阿)</p>
+<h2>目录结构</h2>
+<ol>
+<li>api 保存proto 文件，其自动生成的对应的代码在api目录下 api相当于是定义api结构</li>
+<li>cmd 服务器的入口位置，包含服务的启动逻辑和区分不同的服务 其中使用wire来注入依赖</li>
+<li>internal 服务的实现逻辑 其中有biz，data,server,service等目录 可以理解为mvc的更多层的抽象</li>
+<li>config 配置目录 服务的端口，数据库连接信息等都在其中</li>
+</ol>
+<h2>如何添加新的入口定义</h2>
+<pre><code>syntax = &quot;proto3&quot;;
+
+package api.helloworld.v1;
+import &quot;google/api/annotations.proto&quot;;
+
+option go_package=&quot;helloworld/api/helloworld/v1;v1&quot;;
+
+service HelloWorld{
+    rpc SyaHi(SayHiRequest)returns(SayHiResponse){
+        option (google.api.http)={
+            get: &quot;/hello/{name}&quot;
+        };
+    }
+}
+message SayHiRequest{
+    string name=1;
+}
+message SayHiResponse{
+    string message=1;
+}
+</code></pre>
+<p>除开go_package这行，其他都是标准的proto语法，不用过多解释
+只有go_package这行需要说明 这是编译后的go代码的包名，其中[name1]:[name2] 是代码不同的包名称
+其中的name1表示的是编译后的server中引用的包名，name2表示的是编译后的go代码的包位置的名称
+后续还添加了一个http的路由定义，这样proto生成的代码时就也会去生成http的代码</p>
+<p>还有一点需要注意，grpc或者http只是定义并生成，不代表其已经实现和注册，注册就是类似http的路由注册，这需要手动去添加</p>
+<h2>wire 注入依赖</h2>
+<p>理解wire注入依赖和步骤</p>
+<ol>
+<li>定义依赖提供函数，这一步是用来声明，哪些函数是用来提供依赖</li>
+<li>集合，所有的提供依赖函数集合，因为不同的抽象层会提供不同的依赖集合</li>
+<li>注入，这一步就是用来依据依赖声明，来注入依赖的，通过创建代码文件来实现</li>
+</ol>
+<h2>wire是实现注入依赖？</h2>
+<p>理解这个非常重要，因为kratos框架中，所有的服务都是通过wire来注入依赖的，不理解就无法理解注入依赖的机制
+wire的生成规则：依赖提供构造函数的签名来实现的，会依据函数签名推倒，入参为声明的依赖，出参为出产的依赖(可以为其他依赖)
+这样一个例子：</p>
+<pre><code>以 demo 的 *event.Event 为根，wire 这样回溯：
+1. 要 Event ⟶ 用 NewEvent，它的依赖是 *greeter.Greeter
+2. 要 Greeter ⟶ 用 NewGreeter，它的依赖是 *message.Message
+3. 要 Message ⟶ 用 NewMessage，它的依赖是 *conf.MessageConfig
+MessageConfig 正好是入口函数 initApp(cfg) 的参数（种子），终止
+</code></pre>
+<p>还有一点就是<code>wire.Build</code>的调用方就是需要生成的函数，其入参和出参就是依赖的声明和产出</p>
+<h2>最后</h2>
+<p>kratos的调用流程，其实和其他框架差不多，不走注册中心就是ip注册，然后grpc客户端调用，然后grpc本身对外可以提供http路由
+那么大部分时候，gateway负责全部的对外暴露，然后内部在service负责组织调用biz层的逻辑
+biz层负责处理业务逻辑，然后调用data层的逻辑
+data层负责处理数据库的逻辑
+这样一个分工流程，其实和mvc的分层架构是一致的，内部调用看成http也行，框架的流程和原理不难理解</p>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <span class="text-gray-300">← 上一篇</span>
+    
+
+    
+    <a href="/blog/posts/%e5%a6%82%e4%bd%95%e6%b7%bb%e5%8a%a0%e7%b4%a2%e5%bc%95/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      如何添加索引 →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
