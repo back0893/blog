@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>记一次解码问题排查 - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">记一次解码问题排查</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-10-14</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">ffmpeg</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <h2>单位解释：</h2>
+<ul>
+<li>dts：解码时间单位，是视频解码的时间单位，解码时间是 pts*time_base</li>
+<li>pts：播放时间单位，是视频播放的时间单位 ，播放时间是 pts*time_base</li>
+<li>time_base：时间基，是视频的时间单位</li>
+</ul>
+<p>遇到一个问题，就是hls视频开始播放，最开始2帧会被丢弃，然后在开始播放，严格的播放器会报错。
+排查问题
+ffprobe 逐包看 pts / dts
+ffprobe -v error -select_streams v <br>
+-show_entries packet=pts,dts,duration,flags <br>
+-of csv=p=0 A000000.ts | head -12</p>
+<p>输出的是包的顺序（也就是解码顺序），90kHz 时基，30fps 下 1 帧 = 3000：</p>
+<p>12000,0,3000,K__ ← IDR
+18000,6000,3000,___
+15000,12000,3000,___
+21000,15000,3000,___
+24000,18000,3000,___</p>
+<p>把 DTS 那一列除以 3000，得到 0, 2, 4, 5, 6 帧：前两步各跳 2 帧，之后才是每步 1 帧。正常编码器（libx264、nvenc）是 0, 1, 2, 3…</p>
+<p>这是因为amd的板卡解码bug导致，直接输出hls时，前2帧的dts会出现跳跃，导致解码错误。
+因为这问题在hls.js或者vlc等播放器中不会出现，只有部分播放器中出错</p>
+<h2>解决</h2>
+<ul>
+<li>添加<code>-bf 0 </code>参数，禁用b帧 重新编码后解决</li>
+</ul>
+<h3>未禁用</h3>
+<pre><code>ffprobe -v error -select_streams v \
+-show_entries packet=pts,dts,duration,flags \
+-of csv=p=0 S01E160.mp4 | head -12
+0,-4004,2002,K__
+4004,-2002,2002,___
+2002,0,1001,___
+1001,1001,1001,___
+3003,2002,1001,___
+8008,3003,1001,___
+6006,4004,1001,___
+5005,5005,1001,___
+7007,6006,1001,___
+12012,7007,1001,___
+10010,8008,1001,___
+9009,9009,1001,___
+</code></pre>
+<h3>禁用</h3>
+<pre><code> ffprobe -v error -select_streams v -show_entries packet=pts,dts,duration,flags -of csv=p=0 S01E160.mp4 | head -12
+0,0,1001,K__
+1001,1001,1001,___
+2002,2002,1001,___
+3003,3003,1001,___
+4004,4004,1001,___
+5005,5005,1001,___
+6006,6006,1001,___
+7007,7007,1001,___
+8008,8008,1001,___
+9009,9009,1001,___
+10010,10010,1001,___
+11011,11011,1001,___
+</code></pre>
+<h1>视频转码知识</h1>
+<h2>容器/编码格式</h2>
+<ul>
+<li>容器/封装：视频文件的格式，定义数据的组织方式，定义视频，音频，字幕等数据的存储方式，可以看作为数据的存放方式，将数据按照一定的规则存放(内容盒子)，</li>
+<li>编码格式：压缩算法，容器内部数据使用的压缩算法，用来解码数据(内部盒子的数据如何压缩)</li>
+</ul>
+<h2>装封装/转码</h2>
+<ul>
+<li>转封装 transmuxing：-c copy，不重新编码，秒级完成、画质零损失。用于换容器、抽音轨、按关键帧裁剪。就是重新组织数据，不改变内部盒子如何压缩</li>
+<li>转码 transcoding：解码 → 处理 → 重新编码，慢、有损。用于换 codec、改分辨率、改码率,内部盒子的数据会重新压缩</li>
+</ul>
+<h2>画质/体积</h2>
+<ul>
+<li>分辨率：视频的宽度和高度，单位是像素</li>
+<li>帧率：视频每秒的帧数，每秒播放多少帧(画图)</li>
+<li>码率：每秒数据量</li>
+<li>CRF：恒定质量因子,值越小越清晰,±6 约等于码率翻倍/减半</li>
+<li>GOP/关键帧：每个多少帧放一个I帧</li>
+<li>preset:编码速度↔压缩率权衡
+帧类型是理解压缩的关键：I 帧自包含（大、可随机访问）、P 帧参考前面的帧（约一半体积）、B 帧前后都参考（压缩率最高，但带来解码乱序，即 PTS 与 DTS 不一致）</li>
+</ul>
+<h1>命令骨架</h1>
+<pre><code>ffmpeg [全局选项] [输入选项] -i input [输出选项] output
+</code></pre>
+<p>选项位置极重要：-i 之前是输入选项（作用于该输入），-i 之后是输出选项（只作用于紧跟着的那个输出）。同一个 -ss 放前面是快速 seek（跳到最近关键帧，快），放后面是精确 seek（慢）</p>
+<h1>常用命令参数</h1>
+<ul>
+<li>-c: 指定编码器</li>
+<li>-c copy: 不重新编码，直接复制</li>
+<li>-c:v: 指定视频编码器</li>
+<li>-c:a: 指定音频编码器</li>
+<li>-c:s: 指定字幕编码器</li>
+<li>-i: 制定输入文件</li>
+<li>-an: 去掉音频流</li>
+<li>-vn: 去掉视频流</li>
+<li>preset：指定输出的视频质量，会影响文件的生成速度，有以下几个可用的值 ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow</li>
+</ul>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <span class="text-gray-300">← 上一篇</span>
+    
+
+    
+    <a href="/blog/posts/kratos-v2-%e5%ad%a6%e4%b9%a0%e8%ae%b0%e5%bd%95/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      kratos v2 学习记录 →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
