@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通过teach技能学习skills - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">通过teach技能学习skills</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-10-22</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">学习</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <h1>如何学习新的技能？</h1>
+<p>可以参考这个skill <a href="https://www.aihero.dev/skills-teach">teach技能学习skills</a>
+刚好，我可以使用这个skill来学习这个skill，让我来尝试一下。
+其实 这个skill 很简单，只需要按照skill的步骤来操作即可。
+还会在其目录下生成文件，来记忆学习的进度等，和上课记录一样</p>
+<h1>学习目录结构</h1>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">目录</th>
+<th style="text-align:center">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">MISSION.md</td>
+<td style="text-align:center">记录学习目标和偏好</td>
+</tr>
+<tr>
+<td style="text-align:center">NOTES.md</td>
+<td style="text-align:center">教学过程笔记</td>
+</tr>
+<tr>
+<td style="text-align:center">RESOURCES.md</td>
+<td style="text-align:center">资料清单来源</td>
+</tr>
+<tr>
+<td style="text-align:center">lessons/*</td>
+<td style="text-align:center">课程目录，每一节都有一个html文件</td>
+</tr>
+<tr>
+<td style="text-align:center">references/*</td>
+<td style="text-align:center">速查卡目录，快速查询对应节的内容</td>
+</tr>
+<tr>
+<td style="text-align:center">learning-records</td>
+<td style="text-align:center">记录学习进度</td>
+</tr>
+</tbody>
+</table>
+<h1>如何学习？</h1>
+<p>告诉llm 学习的目标和偏好，学习的资料 如果知道可以告知llm，不知道就 web search 来查找。
+后续的课程，llm 会生成对应的学习文件，跟随llm 的提示，学习即可。</p>
+<h1>后续问题解答</h1>
+<p>skills 是否可以非常详细？</p>
+<ul>
+<li>不要 因为详细规定llm 会失去llm的自由度，和理解能力，对于能力约强大的llm，这种能力被剥夺越多</li>
+<li>细节干扰判断，详细的指令，但其中有漏洞或者冲突时，llm陷入纠结、甚至遵循你而放弃自己的正确判断</li>
+<li>细节本身干扰注意力，细节过多，会消耗llm的注意力和token 用来遵守细节，而不是解决问题</li>
+</ul>
+<h2>如何避免细节干扰？</h2>
+<p>好的模块是接口小而稳定、实现深而自由。调用方只需要知道&quot;输入输出与契约&quot;,不必关心内部怎么实现的复杂逻辑
+类似开发中，一开始先定义简单结构和实现，后续根据需求进行扩展和优化。不一开始追求完美，而是先实现基本功能，后续再根据需求进行优化。
+一个skill应该时一个剧本，契约。</p>
+<ul>
+<li>目标：这一技能想要达到的目标，可以不详细规定每个细节</li>
+<li>硬性契约:输入必须是什么、输出必须满足哪些验收标准</li>
+<li>领域知识:模型可能不知道的约定/术语/工具用法</li>
+<li>决策准则:什么时候该用 vs 不该用、边界在哪，不规定一个固定流程</li>
+<li>约束清单:不可违反的红线(如格式、安全)，让模型自由发挥</li>
+</ul>
+<h2>三个落地的操作原则</h2>
+<p>写&quot;契约 + 约束&quot;,留白给实现 —— body 里明确目标和验收标准,把&quot;怎么达成&quot;留给模型。
+区分硬规则与软建议 —— 用极少数必须遵守的 invariant + 大量可以让模型自主选择的 open area。
+随能力演进而&quot;减重&quot; —— 这也是你问题的点睛之笔:模型在变强,skill 应该越写越薄,而不是越写越厚。定期删掉那些模型现在&quot;一看就懂&quot;的废话,保留只对它有增量价值的部分。</p>
+<ul>
+<li>记住这句话:好的 skill 是给模型&quot;递范围&quot;,不是给模型&quot;装大脑&quot;。 大脑在模型那里,skill 只负责划好边界、递上它够不到的知识 *</li>
+</ul>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <span class="text-gray-300">← 上一篇</span>
+    
+
+    
+    <a href="/blog/posts/%e8%a7%86%e9%a2%91%e7%9b%b8%e5%85%b3%e7%9f%a5%e8%af%86-n%e5%8d%a1/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      视频相关知识-n卡 →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
