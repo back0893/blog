@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>io阻塞错误 - My Blog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h1 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { margin-top: 1rem; margin-bottom: 1rem; line-height: 1.75; }
+    .prose ul, .prose ol { padding-left: 1.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.75; }
+    .prose code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; }
+    .prose pre { background: #1f2937; color: #f9fafb; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+    .prose blockquote { border-left: 3px solid #d1d5db; padding-left: 1rem; color: #6b7280; margin: 1.5rem 0; }
+    .prose a { color: #2563eb; text-decoration: underline; }
+    .prose img { border-radius: 0.5rem; margin: 1.5rem auto; max-width: 100%; }
+    .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    .prose strong { font-weight: 600; color: #111827; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/blog" class="font-bold text-lg tracking-tight">My Blog</a>
+      <div class="flex gap-4 text-sm text-gray-500">
+        <a href="/blog" class="hover:text-gray-900 transition-colors">首页</a>
+        <a href="#" class="hover:text-gray-900 transition-colors">关于</a>
+      </div>
+    </div>
+  </nav>
+
+  
+<main class="max-w-2xl mx-auto px-4 py-12">
+  <a href="/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-gray-600 transition-colors mb-8">
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+  </a>
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">io阻塞错误</h1>
+    <div class="flex items-center gap-3 mt-3 text-sm text-gray-400">
+      <time>2026-08-11</time>
+    </div>
+    
+    <div class="flex gap-2 mt-4">
+      
+      <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">Go</span>
+      
+    </div>
+    
+  </header>
+
+  <article class="prose text-gray-700">
+    <h1>本次案例</h1>
+<p>输入一个坏的mp4文件，转码时 ffmpge持续的输出 stderr信息，使用一个带有大小的buffer(512k)，来存储这些信息。有一个看门狗，观测转码文件大小，当转码进行中并且文件大小一直不变时，认为转码被阻塞，会发送一个kill信号给ffmpge进程，强制结束转码</p>
+<ul>
+<li>现象：
+<ul>
+<li>「命令输出」日志在 512KB 边界处<strong>半行截断</strong>；</li>
+<li>重试产出的 mp4 停在 48 字节（只有容器头）；</li>
+<li>没有任何 ffmpeg 致命错误；</li>
+<li>任务最后被 <code>monitorFileSize</code> 的停滞检测发 SIGINT 终止。</li>
+</ul>
+</li>
+<li>误判方向：先怀疑音频滤镜 <code>pan</code>、硬解回退逻辑。实际把 stderr 直接重定向到文件后，同一条命令 10.87s 就正常报错退出，加 <code>pan</code> 后 150s 正常完成——问题不在 ffmpeg 参数。</li>
+</ul>
+<h1>本次错误的原因</h1>
+<pre><code>func (b *threadSafeBuffer) Write(p []byte) (int, error) {
+    b.mu.Lock()
+    defer b.mu.Unlock()
+
+    remaining := b.max - b.b.Len()
+    if remaining &gt; 0 {
+        // 能塞多少塞多少，塞不下的丢弃
+        return b.b.Write(p[:remaining])
+    }
+    return len(p), nil
+}
+</code></pre>
+<p>其中的 <code>return b.b.Write(p[:remaining])</code> 破坏了 <code>io.Copy</code>的约定</p>
+<h2><code>io.Copy</code> 的约定</h2>
+<p>标准库的复制循环（简化）：</p>
+<pre><code class="language-go">nr, er := src.Read(buf)
+nw, ew := dst.Write(buf[:nr])
+if ew != nil {
+    return ew
+}
+if nw != nr {
+    return io.ErrShortWrite   // 没写满又没有错误，视为短写并停止
+}
+</code></pre>
+<p>对应的 <code>io.Writer</code> 契约：</p>
+<blockquote>
+<p>Write 必须返回 <code>nw == len(p)</code>；否则必须返回非 nil 错误。</p>
+</blockquote>
+<p>两种情况同时成立就是 bug：</p>
+<pre><code class="language-go">nw &lt; len(p) &amp;&amp; err == nil
+</code></pre>
+<h2>正确写法</h2>
+<p>限制保留量，但必须持续消费：</p>
+<pre><code class="language-go">func (b *threadSafeBuffer) Write(p []byte) (int, error) {
+    b.mu.Lock()
+    defer b.mu.Unlock()
+
+    remaining := b.max - b.b.Len()
+    if remaining &gt; 0 {
+        // 能塞多少塞多少，塞不下的丢弃
+        _, _ = b.b.Write(p[:remaining])
+    }
+    // 无论实际写入多少，都必须报告整块已处理，
+    // 否则 io.Copy 会以 io.ErrShortWrite 停止读取
+    return len(p), nil
+}
+</code></pre>
+<h2>问题还原</h2>
+<ol>
+<li>因为写入的数据量大于保留量，所以会返回 <code>nw &lt; len(p)</code>，导致 <code>io.Copy</code> 停止读取</li>
+<li>因为导致 <code>io.Copy</code> 停止读取，所以会导致进行阻塞,导致后续的流程被阻塞</li>
+</ol>
+
+  </article>
+
+  <div class="flex justify-between items-center mt-12 pt-6 border-t border-gray-200 text-sm">
+    
+    <a href="/blog/posts/%e6%84%9f%e8%b0%a2/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      ← 感谢
+    </a>
+    
+
+    
+    <a href="/blog/posts/postgresql-jsonb-%e6%93%8d%e4%bd%9c%e5%ad%a6%e4%b9%a0/" class="text-gray-500 hover:text-gray-900 transition-colors">
+      PostgreSQL JSONB 操作学习 →
+    </a>
+    
+  </div>
+</main>
+
+
+  <footer class="border-t border-gray-200 mt-16">
+    <div class="max-w-2xl mx-auto px-4 py-6 text-center text-sm text-gray-400">
+      &copy; 2026 My Blog
+    </div>
+  </footer>
+
+</body>
+</html>
